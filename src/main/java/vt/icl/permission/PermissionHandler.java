@@ -1,8 +1,7 @@
 package vt.icl.permission;
 
-import net.minecraft.command.CommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.command.ServerCommandSource;
 
 public interface PermissionHandler {
-    boolean hasPermission(CommandSource source, String permission);
+    boolean hasPermission(ServerCommandSource source, String permission);
 }

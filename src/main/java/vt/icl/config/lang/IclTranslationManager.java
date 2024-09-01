@@ -3,7 +3,7 @@ package vt.icl.config.lang;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import net.fabricmc.loader.api.FabricLoader;
+import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.commons.io.FileUtils;
 import vt.icl.ICL;
 
@@ -22,7 +22,7 @@ public class IclTranslationManager {
     }.getType();
 
     public static List<String> getAvailableLangs() {
-        File langDir = FabricLoader.getInstance().getConfigDir().resolve("Icl/lang").toFile();
+        File langDir = FMLPaths.CONFIGDIR.get().resolve("Icl/lang").toFile();
         String[] files = langDir.list((dir, name) -> name.endsWith(".json"));
         if (files != null) {
             for (int i = 0; i < files.length; i++) {
@@ -34,7 +34,7 @@ public class IclTranslationManager {
     }
 
     public static Map<String, String> loadTranslation(String lang) {
-        File langFile = FabricLoader.getInstance().getConfigDir().resolve(String.format(LANG_FILE_NAME, lang)).toFile();
+        File langFile = FMLPaths.CONFIGDIR.get().resolve(String.format(LANG_FILE_NAME, lang)).toFile();
         if (langFile.exists()) {
             try {
                 String json = FileUtils.readFileToString(langFile, "UTF-8");
@@ -64,7 +64,7 @@ public class IclTranslationManager {
     }
 
     public static void saveTranslation(String lang, Map<String, String> translations) {
-        File langFile = FabricLoader.getInstance().getConfigDir().resolve(String.format(LANG_FILE_NAME, lang)).toFile();
+        File langFile = FMLPaths.CONFIGDIR.get().resolve(String.format(LANG_FILE_NAME, lang)).toFile();
         try {
             String json = GSON.toJson(translations, MAP_TYPE);
             FileUtils.writeStringToFile(langFile, json, "UTF-8");
@@ -79,7 +79,7 @@ public class IclTranslationManager {
     }
 
     private static void createDefaultTranslationFile(String lang, Map<String, String> defaultTranslations) {
-        File langFile = FabricLoader.getInstance().getConfigDir().resolve(String.format(LANG_FILE_NAME, lang)).toFile();
+        File langFile = FMLPaths.CONFIGDIR.get().resolve(String.format(LANG_FILE_NAME, lang)).toFile();
         if (!langFile.exists()) {
             saveTranslation(lang, defaultTranslations);
         }

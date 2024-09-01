@@ -2,7 +2,7 @@ package vt.icl.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.fabricmc.loader.api.FabricLoader;
+import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.commons.io.FileUtils;
 import vt.icl.ICL;
 
@@ -15,7 +15,7 @@ public class ConfigManager {
     private static Configuration config;
 
     public static void loadConfig() {
-        File configFile = FabricLoader.getInstance().getConfigDir().resolve(CONFIG_FILE_NAME).toFile();
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(CONFIG_FILE_NAME).toFile();
         if (configFile.exists()) {
             try {
                 config = GSON.fromJson(FileUtils.readFileToString(configFile, "UTF-8"), Configuration.class);
@@ -47,7 +47,7 @@ public class ConfigManager {
     }
 
     public static void saveConfig() {
-        File configFile = FabricLoader.getInstance().getConfigDir().resolve(CONFIG_FILE_NAME).toFile();
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(CONFIG_FILE_NAME).toFile();
         try {
             FileUtils.writeStringToFile(configFile, GSON.toJson(config), "UTF-8");
         } catch (Exception e) {

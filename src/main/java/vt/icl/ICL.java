@@ -1,14 +1,11 @@
 package vt.icl;
 
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.CommandSource;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.network.packet.s2c.play.PlaySoundIdS2CPacket;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.ClickEvent;
@@ -18,6 +15,14 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypeFilter;
 import net.minecraft.util.math.Vec3d;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.server.command.ModIdArgument;
+import net.minecraftforge.server.permission.events.PermissionGatherEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vt.icl.commands.IclCommand;
@@ -25,6 +30,7 @@ import vt.icl.config.ConfigManager;
 import vt.icl.config.Configuration;
 import vt.icl.config.lang.IclTranslationManager;
 import vt.icl.mixin.ItemEntityAccessor;
+import vt.icl.permission.ForgePermissions;
 import vt.icl.permission.PermissionHandler;
 
 import java.util.Map;
@@ -33,53 +39,70 @@ import java.util.TimerTask;
 
 import static vt.icl.config.lang.IclTranslationManager.createDefaultTranslationFiles;
 
-public class ICL implements ModInitializer {
-    public static final String MOD_ID = "icl";
-    public static final String MOD_PREFIX = "[" + MOD_ID.toUpperCase() + "] ";
-    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID.toUpperCase());
+@Mod(ICL.MODID)
+public class ICL {
+    public static final String MODID = "icl";
+    public static final String MOD_PREFIX = "[" + MODID.toUpperCase() + "] ";
+    public static final Logger LOGGER = LoggerFactory.getLogger(MODID.toUpperCase());
     public static Configuration config = ConfigManager.getConfig();
-    private static Timer TIMER = new Timer(MOD_ID.toUpperCase());
+    private static Timer TIMER = new Timer(MODID.toUpperCase());
     private static MinecraftServer server;
 
     public static Map<String, String> translations;
     private static Map<String, String> defaultTranslations;
     public static PermissionHandler permissionHandler;
 
-    @Override
-    public void onInitialize() {
-        LOGGER.info("Initializing " + MOD_ID.toUpperCase());
-        CommandRegistrationCallback.EVENT.register(IclCommand::register);
+    public ICL() {
+        LOGGER.info("Initializing " + MODID.toUpperCase());
         createDefaultTranslationFiles();
         translations = IclTranslationManager.loadTranslation(config.NotificationLang);
         defaultTranslations = IclTranslationManager.loadTranslation("en_us");
-        ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+        MinecraftForge.EVENT_BUS.register(this);
+    }
 
-            if (FabricLoader.getInstance().isModLoaded("fabric-permissions-api-v0")) {
-                permissionHandler = new vt.icl.permission.FabricPermissions();
-            } else {
-                permissionHandler = null;
+    @SubscribeEvent
+    public void onPermissionNodesRegister(PermissionGatherEvent.Nodes event) {
+        ForgePermissions.init();
+        event.addNodes(ForgePermissions.permissionNodesList);
+    }
+
+    @SubscribeEvent
+    public void onServerStarting(ServerStartingEvent event) {
+        if (config.UsePermissionsApi) {
+            try {
+                Class.forName("net.minecraftforge.server.permission.PermissionAPI");
+                permissionHandler = new vt.icl.permission.ForgePermissions();
+            } catch (ClassNotFoundException e) {
+                LOGGER.error("PermissionAPI not found, falling back to default permission system");
             }
-
-            ICL.server = server;
-            translations = IclTranslationManager.loadTranslation(config.NotificationLang);
-            if (config.Delay > 0) {
-                doItemClean(server);
-                if (config.doShowNotification) {
-                    setupNotificationTimers(server);
-                }
-                if (config.doNotificationCountdown) {
-                    setupCountdownTimer(server);
-                }
-            } else {
-                LOGGER.info(MOD_ID.toUpperCase() + " disabled, delay is less than 0");
+        } else {
+            LOGGER.info("Using default permission system");
+            permissionHandler = null;
+        }
+        server = event.getServer();
+        if (config.Delay > 0) {
+            doItemClean(server);
+            if (config.doShowNotification) {
+                setupNotificationTimers(server);
             }
-            LOGGER.info(MOD_ID.toUpperCase() + " initialized");
-        });
+            if (config.doNotificationCountdown) {
+                setupCountdownTimer(server);
+            }
+        } else {
+            LOGGER.info(MODID.toUpperCase() + " disabled, delay is less than 0");
+        }
+        LOGGER.info(MODID.toUpperCase() + " initialized");
+    }
 
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            TIMER.cancel();
-            LOGGER.info(MOD_ID.toUpperCase() + " stopped");
-        });
+    @SubscribeEvent
+    public void onServerStopping(ServerStoppingEvent event) {
+        TIMER.cancel();
+        LOGGER.info(MODID.toUpperCase() + " stopped");
+    }
+
+    @SubscribeEvent
+    public void onCommandRegister(RegisterCommandsEvent event) {
+        IclCommand.register(event.getDispatcher());
     }
 
     public static void doItemClean(MinecraftServer server) {
@@ -224,7 +247,7 @@ public class ICL implements ModInitializer {
 
     public static void reloadIcl() {
         TIMER.cancel();
-        TIMER = new Timer(MOD_ID.toUpperCase());
+        TIMER = new Timer(MODID.toUpperCase());
         config = ConfigManager.getConfig();
         if (config.Delay > 0) {
             doItemClean(server);
@@ -235,13 +258,13 @@ public class ICL implements ModInitializer {
                 setupCountdownTimer(server);
             }
         } else {
-            LOGGER.info(MOD_ID.toUpperCase() + " disabled, delay is less than 0");
+            LOGGER.info(MODID.toUpperCase() + " disabled, delay is less than 0");
         }
     }
 
     public static void CancelIcl(int tempDelay) {
         TIMER.cancel();
-        TIMER = new Timer(MOD_ID.toUpperCase());
+        TIMER = new Timer(MODID.toUpperCase());
         if (tempDelay > 0) {
             TIMER.schedule(new TimerTask() {
                 @Override
@@ -256,7 +279,7 @@ public class ICL implements ModInitializer {
                             setupCountdownTimer(server);
                         }
                     } else {
-                        LOGGER.info(MOD_ID.toUpperCase() + " disabled, delay is less than 0");
+                        LOGGER.info(MODID.toUpperCase() + " disabled, delay is less than 0");
                     }
                 }
             }, tempDelay * 1000L);
@@ -271,7 +294,7 @@ public class ICL implements ModInitializer {
                     setupCountdownTimer(server);
                 }
             } else {
-                LOGGER.info(MOD_ID.toUpperCase() + " disabled, delay is less than 0");
+                LOGGER.info(MODID.toUpperCase() + " disabled, delay is less than 0");
             }
         }
     }
@@ -316,9 +339,9 @@ public class ICL implements ModInitializer {
         player.networkHandler.sendPacket(new PlaySoundIdS2CPacket(sound, SoundCategory.PLAYERS, vec3d, 1, 1, 1));
     }
 
-    private static boolean permissionCheckforCancel(CommandSource source) {
+    private static boolean permissionCheckforCancel(ServerCommandSource source) {
         if (ICL.permissionHandler != null) {
-            return ICL.permissionHandler.hasPermission(source, ICL.MOD_ID + "." + "cancel");
+            return ICL.permissionHandler.hasPermission(source, ICL.MODID + "." + "cancel");
         } else {
             return !config.RequireOpCancel || source.hasPermissionLevel(2);
         }

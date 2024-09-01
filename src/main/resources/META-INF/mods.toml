@@ -1,0 +1,27 @@
+modLoader = "javafml"
+loaderVersion = "[43,)"
+issueTrackerURL = "https://github.com/VeiTrr/ItemClearLag-ICL/issues"
+license = "MIT"
+
+[[mods]]
+modId = "icl"
+version = "${version}"
+displayName = "ICL"
+authors = "VeiTr"
+description = ''''''
+logoFile = "assets/icl/icon.png"
+displayTest = "NONE"
+
+[[dependencies.icl]]
+modId = "forge"
+mandatory = true
+versionRange = "[43,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.icl]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.19.2,)"
+ordering = "NONE"
+side = "BOTH"

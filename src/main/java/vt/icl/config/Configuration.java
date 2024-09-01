@@ -21,6 +21,7 @@ public class Configuration {
     public boolean RequireOpCancel;
     public boolean preserveNoDespawnItems;
     public boolean preserveNoPickupItems;
+    public boolean UsePermissionsApi;
 
     public Configuration() {
         this.Delay = 80;
@@ -40,6 +41,7 @@ public class Configuration {
         this.RequireOpCancel = false;
         this.preserveNoDespawnItems = true;
         this.preserveNoPickupItems = true;
+        this.UsePermissionsApi = false;
 
     }
 
@@ -66,6 +68,7 @@ public class Configuration {
         map.put("RequireOpCancel", boolean.class);
         map.put("preserveNoDespawnItems", boolean.class);
         map.put("preserveNoPickupItems", boolean.class);
+        map.put("UsePermissionsApi", boolean.class);
         return map;
     }
 
@@ -87,6 +90,7 @@ public class Configuration {
         this.RequireOpCancel = configuration.RequireOpCancel;
         this.preserveNoDespawnItems = configuration.preserveNoDespawnItems;
         this.preserveNoPickupItems = configuration.preserveNoPickupItems;
+        this.UsePermissionsApi = configuration.UsePermissionsApi;
     }
 
     public void set(String key, String value) {
@@ -142,6 +146,9 @@ public class Configuration {
             case "preserveNoPickupItems":
                 this.preserveNoPickupItems = Boolean.parseBoolean(value);
                 break;
+            case "UsePermissionsApi":
+                this.UsePermissionsApi = Boolean.parseBoolean(value);
+                break;
         }
         save();
     }
@@ -165,6 +172,7 @@ public class Configuration {
             case "RequireOpCancel" -> String.valueOf(this.RequireOpCancel);
             case "preserveNoDespawnItems" -> String.valueOf(this.preserveNoDespawnItems);
             case "preserveNoPickupItems" -> String.valueOf(this.preserveNoPickupItems);
+            case "UsePermissionsApi" -> String.valueOf(this.UsePermissionsApi);
             default -> null;
         };
     }
